@@ -6,3 +6,4 @@ export { EmptyState } from "./EmptyState";
 export { TrancheCard } from "./TrancheCard";
 export { VaultCard } from "./VaultCard";
 export { EpochTimeline, EpochProgress } from "./EpochTimeline";
+export { ConnectButton } from "./ConnectButton";

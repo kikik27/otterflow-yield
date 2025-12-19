@@ -1,11 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount, useChainId } from "wagmi";
+import { useChainId } from "wagmi";
 import { Menu, X, Shield } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
+import { ConnectButton } from "@/components/web3/ConnectButton";
 
 const navLinks = [
   { href: "/vaults", label: "Explore" },
@@ -82,14 +82,7 @@ export function Navbar() {
           <div className="px-2 py-1 rounded-md bg-muted text-xs font-medium text-muted-foreground">
             {getNetworkLabel()}
           </div>
-          <ConnectButton
-            chainStatus="none"
-            showBalance={false}
-            accountStatus={{
-              smallScreen: "avatar",
-              largeScreen: "full",
-            }}
-          />
+          <ConnectButton />
         </div>
 
         {/* Mobile Menu Button */}

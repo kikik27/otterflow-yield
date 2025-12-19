@@ -1,6 +1,6 @@
 import { http, createConfig } from "wagmi";
-import { mainnet, sepolia, localhost } from "wagmi/chains";
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { sepolia } from "wagmi/chains";
+import { injected, metaMask } from "wagmi/connectors";
 
 // Lisk Sepolia testnet configuration
 export const liskSepolia = {
@@ -13,7 +13,6 @@ export const liskSepolia = {
   },
   rpcUrls: {
     default: { http: ["https://rpc.sepolia-api.lisk.com"] },
-    public: { http: ["https://rpc.sepolia-api.lisk.com"] },
   },
   blockExplorers: {
     default: { name: "Blockscout", url: "https://sepolia-blockscout.lisk.com" },
@@ -32,15 +31,16 @@ export const anvil = {
   },
   rpcUrls: {
     default: { http: ["http://127.0.0.1:8545"] },
-    public: { http: ["http://127.0.0.1:8545"] },
   },
   testnet: true,
 } as const;
 
-export const config = getDefaultConfig({
-  appName: "OtterFlow",
-  projectId: "otterflow-demo", // Replace with actual WalletConnect project ID
+export const config = createConfig({
   chains: [anvil, liskSepolia, sepolia],
+  connectors: [
+    injected(),
+    metaMask(),
+  ],
   transports: {
     [anvil.id]: http(),
     [liskSepolia.id]: http(),
