@@ -46,7 +46,7 @@ export function usePools() {
       
       const poolPromises = Array.from({ length: count }, async (_, i) => {
         try {
-          const result = await client.readContract({
+          const result = await (client.readContract as any)({
             address: LOCAL_ADDRESSES.OtterAssetRegistry,
             abi: OtterAssetRegistryABI,
             functionName: "getPool",
