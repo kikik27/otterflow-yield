@@ -1,13 +1,9 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Shield, FileCheck, TrendingUp, Send, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { StatusBadge, DisclosureBox, EmptyState } from "@/components/web3";
+import { EmptyState } from "@/components/web3";
 import { useUserRole } from "@/hooks/useUserRole";
 import { cn } from "@/lib/utils";
+import { ProposalsTab, RevenueTab, DistributeTab } from "@/components/verifier";
 
 const verifierTabs = [
   { href: "/verifier", label: "Proposals", icon: FileCheck },
@@ -16,7 +12,7 @@ const verifierTabs = [
 ];
 
 export default function VerifierConsole() {
-  const { isVerifier, isConnected } = useUserRole();
+  const { isConnected } = useUserRole();
   const location = useLocation();
 
   if (!isConnected) {
@@ -33,22 +29,6 @@ export default function VerifierConsole() {
     );
   }
 
-  // For demo purposes, show the console even without verifier role
-  // In production, uncomment this check:
-  // if (!isVerifier) {
-  //   return (
-  //     <div className="min-h-screen py-12">
-  //       <div className="container mx-auto px-4">
-  //         <EmptyState
-  //           icon="file"
-  //           title="Access Denied"
-  //           description="You don't have the VERIFIER_ROLE required to access this console."
-  //         />
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -56,7 +36,7 @@ export default function VerifierConsole() {
         <div className="container mx-auto px-4">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Home
@@ -108,96 +88,6 @@ export default function VerifierConsole() {
           {location.pathname === "/verifier/distribute" && <DistributeTab />}
         </div>
       </section>
-    </div>
-  );
-}
-
-function ProposalsTab() {
-  const mockProposals = [
-    { id: 1, issuer: "0x1234...5678", metadataCID: "QmXyz...", status: "pending" },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <DisclosureBox variant="info" title="Proposal Review">
-        Review pending pool proposals. Activate to create vaults or reject invalid proposals.
-      </DisclosureBox>
-
-      {mockProposals.length === 0 ? (
-        <EmptyState icon="inbox" title="No pending proposals" description="All proposals have been reviewed." />
-      ) : (
-        <div className="space-y-4">
-          {mockProposals.map((proposal) => (
-            <Card key={proposal.id} className="p-4 bg-card border-border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-foreground">Pool #{proposal.id}</p>
-                  <p className="text-sm text-muted-foreground font-mono">{proposal.issuer}</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" className="bg-success hover:bg-success/90">Activate</Button>
-                  <Button size="sm" variant="destructive">Reject</Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function RevenueTab() {
-  const [poolId, setPoolId] = useState("");
-  const [epoch, setEpoch] = useState("");
-  const [amount, setAmount] = useState("");
-
-  return (
-    <div className="space-y-6 max-w-xl">
-      <DisclosureBox variant="info" title="Revenue Management">
-        Post verified revenue and deposit funds into escrow.
-      </DisclosureBox>
-
-      <Card className="p-6 bg-card border-border space-y-4">
-        <h3 className="font-semibold text-foreground">Post Revenue</h3>
-        <Input placeholder="Pool ID" value={poolId} onChange={(e) => setPoolId(e.target.value)} />
-        <Input placeholder="Epoch" value={epoch} onChange={(e) => setEpoch(e.target.value)} />
-        <Input placeholder="Amount (mUSDC)" value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <div className="flex gap-2">
-          <Button className="flex-1">Post to Oracle</Button>
-          <Button variant="outline" className="flex-1">Deposit to Escrow</Button>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-function DistributeTab() {
-  const readyEpochs = [{ poolId: 1, epoch: 2, amount: "1,200" }];
-
-  return (
-    <div className="space-y-6">
-      <DisclosureBox variant="info" title="Distribution">
-        Trigger yield distribution for epochs with escrowed funds.
-      </DisclosureBox>
-
-      {readyEpochs.length === 0 ? (
-        <EmptyState icon="inbox" title="No epochs ready" description="No epochs have sufficient escrowed funds." />
-      ) : (
-        <div className="space-y-4">
-          {readyEpochs.map((item) => (
-            <Card key={`${item.poolId}-${item.epoch}`} className="p-4 bg-card border-border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-foreground">Pool #{item.poolId} - Epoch {item.epoch}</p>
-                  <p className="text-sm text-muted-foreground">{item.amount} mUSDC escrowed</p>
-                </div>
-                <Button size="sm">Distribute</Button>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

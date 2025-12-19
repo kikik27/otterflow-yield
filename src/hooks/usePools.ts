@@ -39,7 +39,7 @@ export function usePools() {
 
   const count = poolCount ? Number(poolCount) : 0;
 
-  const { data: pools = [], isLoading: poolsLoading } = useQuery({
+  const { data: pools = [], isLoading: poolsLoading, refetch } = useQuery({
     queryKey: ["pools", count],
     queryFn: async (): Promise<Pool[]> => {
       if (count === 0) return [];
@@ -88,7 +88,7 @@ export function usePools() {
     enabled: count > 0,
   });
 
-  return { pools, poolCount: count, isLoading: countLoading || poolsLoading };
+  return { pools, poolCount: count, isLoading: countLoading || poolsLoading, refetch };
 }
 
 export function usePool(poolId: number) {
