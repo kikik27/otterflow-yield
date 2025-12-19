@@ -1,76 +1,66 @@
 import { useReadContract, useReadContracts } from "wagmi";
 import { OtterAssetRegistryABI } from "@/lib/abis";
 import { LOCAL_ADDRESSES, getPoolStatusLabel } from "@/lib/contracts";
-import { formatUnits } from "viem";
 
 export interface Pool {
   id: number;
-  issuer: string;
+  issuer: `0x${string}`;
   metadataCID: string;
   epochSeconds: bigint;
   startTime: bigint;
   seniorSplitBps: bigint;
   status: number;
   statusLabel: "pending" | "active" | "rejected" | "closed";
-  seniorVault: string;
-  juniorVault: string;
+  seniorVault: `0x${string}`;
+  juniorVault: `0x${string}`;
   name: string;
 }
 
 export function usePools() {
-  // Get total pool count
   const { data: poolCount, isLoading: countLoading } = useReadContract({
     address: LOCAL_ADDRESSES.OtterAssetRegistry,
     abi: OtterAssetRegistryABI,
     functionName: "poolCount",
   });
 
-  // Generate contract calls for all pools
-  const poolContracts = poolCount
-    ? Array.from({ length: Number(poolCount) }, (_, i) => ({
+  const count = poolCount ? Number(poolCount) : 0;
+  
+  const contracts = count > 0 
+    ? Array.from({ length: count }, (_, i) => ({
         address: LOCAL_ADDRESSES.OtterAssetRegistry,
         abi: OtterAssetRegistryABI,
-        functionName: "getPool" as const,
+        functionName: "getPool",
         args: [BigInt(i + 1)],
       }))
     : [];
 
-  const { data: poolsData, isLoading: poolsLoading } = useReadContracts({
-    contracts: poolContracts,
-    query: {
-      enabled: !!poolCount && Number(poolCount) > 0,
-    },
-  });
+  const { data: poolsData, isLoading: poolsLoading } = useReadContracts({ contracts: contracts as any });
 
-  const pools: Pool[] = poolsData
-    ? poolsData
-        .map((result, index) => {
-          if (result.status !== "success" || !result.result) return null;
-          const pool = result.result as any;
-          return {
-            id: index + 1,
-            issuer: pool.issuer,
-            metadataCID: pool.metadataCID,
-            epochSeconds: pool.epochSeconds,
-            startTime: pool.startTime,
-            seniorSplitBps: pool.seniorSplitBps,
-            status: pool.status,
-            statusLabel: getPoolStatusLabel(pool.status),
-            seniorVault: pool.seniorVault,
-            juniorVault: pool.juniorVault,
-            name: pool.metadataCID
-              ? `Otter Pool #${index + 1}`
-              : `Otter Pool #${index + 1}`,
-          };
-        })
-        .filter((p): p is Pool => p !== null)
-    : [];
+  const pools: Pool[] = [];
+  
+  if (poolsData) {
+    for (let i = 0; i < poolsData.length; i++) {
+      const result = poolsData[i] as any;
+      if (result.status === "success" && result.result) {
+        const p = result.result;
+        pools.push({
+          id: i + 1,
+          issuer: p.issuer,
+          metadataCID: p.metadataCID,
+          epochSeconds: p.epochSeconds,
+          startTime: p.startTime,
+          seniorSplitBps: p.seniorSplitBps,
+          status: p.status,
+          statusLabel: getPoolStatusLabel(p.status),
+          seniorVault: p.seniorVault,
+          juniorVault: p.juniorVault,
+          name: `Otter Pool #${i + 1}`,
+        });
+      }
+    }
+  }
 
-  return {
-    pools,
-    poolCount: poolCount ? Number(poolCount) : 0,
-    isLoading: countLoading || poolsLoading,
-  };
+  return { pools, poolCount: count, isLoading: countLoading || poolsLoading };
 }
 
 export function usePool(poolId: number) {
@@ -79,31 +69,23 @@ export function usePool(poolId: number) {
     abi: OtterAssetRegistryABI,
     functionName: "getPool",
     args: [BigInt(poolId)],
-    query: {
-      enabled: poolId > 0,
-    },
+    query: { enabled: poolId > 0 },
   });
 
-  const pool: Pool | null = data
-    ? {
-        id: poolId,
-        issuer: (data as any).issuer,
-        metadataCID: (data as any).metadataCID,
-        epochSeconds: (data as any).epochSeconds,
-        startTime: (data as any).startTime,
-        seniorSplitBps: (data as any).seniorSplitBps,
-        status: (data as any).status,
-        statusLabel: getPoolStatusLabel((data as any).status),
-        seniorVault: (data as any).seniorVault,
-        juniorVault: (data as any).juniorVault,
-        name: `Otter Pool #${poolId}`,
-      }
-    : null;
+  const p = data as any;
+  const pool: Pool | null = p ? {
+    id: poolId,
+    issuer: p.issuer,
+    metadataCID: p.metadataCID,
+    epochSeconds: p.epochSeconds,
+    startTime: p.startTime,
+    seniorSplitBps: p.seniorSplitBps,
+    status: p.status,
+    statusLabel: getPoolStatusLabel(p.status),
+    seniorVault: p.seniorVault,
+    juniorVault: p.juniorVault,
+    name: `Otter Pool #${poolId}`,
+  } : null;
 
-  return {
-    pool,
-    isLoading,
-    error,
-    refetch,
-  };
+  return { pool, isLoading, error, refetch };
 }

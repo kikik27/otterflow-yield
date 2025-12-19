@@ -5,7 +5,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
-import { ConnectButton } from "@/components/web3/ConnectButton";
+import { ConnectButton, FaucetButton } from "@/components/web3";
 
 const navLinks = [
   { href: "/vaults", label: "Explore" },
@@ -79,6 +79,7 @@ export function Navbar() {
 
         {/* Wallet & Network */}
         <div className="hidden md:flex items-center gap-3">
+          <FaucetButton />
           <div className="px-2 py-1 rounded-md bg-muted text-xs font-medium text-muted-foreground">
             {getNetworkLabel()}
           </div>
