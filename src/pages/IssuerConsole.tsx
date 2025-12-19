@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Briefcase, ArrowLeft, FileUp } from "lucide-react";
+import { Briefcase, ArrowLeft, FileUp, Lock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,44 @@ import { parseUnits } from "viem";
 import { LOCAL_ADDRESSES } from "@/lib/contracts";
 import { OtterAssetRegistryABI } from "@/lib/abis";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
+
+function AccessDenied({ role, description }: { role: string; description: string }) {
+  return (
+    <div className="min-h-screen py-12">
+      <div className="container mx-auto px-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md mx-auto"
+        >
+          <Card className="p-8 bg-card border-destructive/30 text-center">
+            <div className="w-16 h-16 rounded-full bg-destructive/20 flex items-center justify-center mx-auto mb-4">
+              <Lock className="h-8 w-8 text-destructive" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground mb-2">Access Restricted</h2>
+            <p className="text-muted-foreground mb-4">{description}</p>
+            <div className="p-3 rounded-lg bg-muted mb-4">
+              <div className="flex items-center justify-center gap-2 text-sm">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <span className="text-muted-foreground">Required role: <strong className="text-foreground">{role}</strong></span>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">
+              On-chain roles are assigned by the protocol admin. Contact the team if you believe this is an error.
+            </p>
+            <Button asChild variant="outline">
+              <Link to="/">Return Home</Link>
+            </Button>
+          </Card>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
 
 export default function IssuerConsole() {
-  const { isIssuer, isConnected } = useUserRole();
+  const { isIssuer, isAdmin, isConnected } = useUserRole();
 
   if (!isConnected) {
     return (
@@ -30,6 +65,15 @@ export default function IssuerConsole() {
     );
   }
 
+  // Role-based access check
+  if (!isIssuer && !isAdmin) {
+    return (
+      <AccessDenied 
+        role="Issuer"
+        description="You need the Issuer role to create and manage revenue-backed pools."
+      />
+    );
+  }
   return (
     <div className="min-h-screen">
       {/* Header */}
