@@ -36,16 +36,13 @@ export const anvil = {
 } as const;
 
 export const config = createConfig({
-  chains: [anvil, liskSepolia, sepolia],
-  connectors: [
-    injected(),
-    metaMask(),
-  ],
+  chains: [sepolia, liskSepolia],
+  connectors: [injected(), metaMask()],
   transports: {
-    [anvil.id]: http(),
-    [liskSepolia.id]: http(),
     [sepolia.id]: http(),
+    [liskSepolia.id]: http(),
   },
+  ssr: true,
 });
 
 // Export chain IDs for easy reference
