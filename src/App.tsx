@@ -1,5 +1,3 @@
-import "@rainbow-me/rainbowkit/styles.css";
-import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -21,33 +19,25 @@ const queryClient = new QueryClient();
 const App = () => (
   <WagmiProvider config={config}>
     <QueryClientProvider client={queryClient}>
-      <RainbowKitProvider
-        theme={darkTheme({
-          accentColor: "hsl(199, 89%, 48%)",
-          accentColorForeground: "hsl(222, 47%, 6%)",
-          borderRadius: "medium",
-        })}
-      >
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route element={<MainLayout />}>
-                <Route path="/" element={<Landing />} />
-                <Route path="/vaults" element={<Explore />} />
-                <Route path="/vaults/:poolId" element={<VaultDetail />} />
-                <Route path="/portfolio" element={<Portfolio />} />
-                <Route path="/how-it-works" element={<HowItWorks />} />
-                <Route path="/verifier" element={<VerifierConsole />} />
-                <Route path="/verifier/revenue" element={<VerifierConsole />} />
-                <Route path="/verifier/distribute" element={<VerifierConsole />} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </RainbowKitProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<Landing />} />
+              <Route path="/vaults" element={<Explore />} />
+              <Route path="/vaults/:poolId" element={<VaultDetail />} />
+              <Route path="/portfolio" element={<Portfolio />} />
+              <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/verifier" element={<VerifierConsole />} />
+              <Route path="/verifier/revenue" element={<VerifierConsole />} />
+              <Route path="/verifier/distribute" element={<VerifierConsole />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   </WagmiProvider>
 );
