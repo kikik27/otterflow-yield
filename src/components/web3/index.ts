@@ -10,3 +10,4 @@ export { ConnectButton } from "./ConnectButton";
 export { FaucetButton } from "./FaucetButton";
 export { DepositPanel } from "./DepositPanel";
 export { WithdrawPanel } from "./WithdrawPanel";
+export { APYCalculator } from "./APYCalculator";

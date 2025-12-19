@@ -24,6 +24,7 @@ import {
   SkeletonCard,
   DepositPanel,
   WithdrawPanel,
+  APYCalculator,
 } from "@/components/web3";
 import { usePool } from "@/hooks/usePools";
 import { useVaultPosition } from "@/hooks/useVaultPosition";
@@ -186,6 +187,9 @@ export default function VaultDetail() {
                   apy="~12-20%"
                 />
               </div>
+
+              {/* APY Calculator */}
+              <APYCalculator seniorAPY={7} juniorAPY={18} />
 
               {/* Action Panel */}
               {isConnected && isActive && currentVault && (
