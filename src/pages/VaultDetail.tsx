@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   ExternalLink,
   Clock,
-  Users,
   TrendingUp,
   Shield,
   Zap,
@@ -13,7 +12,6 @@ import {
 } from "lucide-react";
 import { useAccount } from "wagmi";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -24,19 +22,25 @@ import {
   EpochTimeline,
   EpochProgress,
   SkeletonCard,
+  DepositPanel,
+  WithdrawPanel,
 } from "@/components/web3";
 import { usePool } from "@/hooks/usePools";
+import { useVaultPosition } from "@/hooks/useVaultPosition";
 
 export default function VaultDetail() {
   const { poolId } = useParams<{ poolId: string }>();
-  const { pool, isLoading } = usePool(Number(poolId));
-  const { isConnected, address } = useAccount();
-  const [selectedTranche, setSelectedTranche] = useState<"senior" | "junior">(
-    "senior"
-  );
-  const [depositAmount, setDepositAmount] = useState("");
+  const { pool, isLoading, refetch } = usePool(Number(poolId));
+  const { isConnected } = useAccount();
+  const [selectedTranche, setSelectedTranche] = useState<"senior" | "junior">("senior");
+  const [activeTab, setActiveTab] = useState<"deposit" | "withdraw">("deposit");
 
-  // Mock epoch data
+  const seniorVault = pool?.seniorVault as `0x${string}` | undefined;
+  const juniorVault = pool?.juniorVault as `0x${string}` | undefined;
+  
+  const { totalAssetsFormatted: seniorTvl } = useVaultPosition(seniorVault);
+  const { totalAssetsFormatted: juniorTvl } = useVaultPosition(juniorVault);
+
   const mockEpochs = [
     { epoch: 1, status: "distributed" as const, amount: "1,000", timestamp: Date.now() / 1000 - 86400 * 7 },
     { epoch: 2, status: "escrowed" as const, amount: "1,200", timestamp: Date.now() / 1000 - 86400 * 3 },
@@ -58,12 +62,8 @@ export default function VaultDetail() {
     return (
       <div className="min-h-screen py-8">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">
-            Pool Not Found
-          </h1>
-          <p className="text-muted-foreground mb-6">
-            This pool doesn't exist or hasn't been created yet.
-          </p>
+          <h1 className="text-2xl font-bold text-foreground mb-4">Pool Not Found</h1>
+          <p className="text-muted-foreground mb-6">This pool doesn't exist or hasn't been created yet.</p>
           <Button asChild variant="outline">
             <Link to="/vaults">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -78,16 +78,15 @@ export default function VaultDetail() {
   const seniorSplit = Number(pool.seniorSplitBps) / 100;
   const juniorSplit = (10000 - Number(pool.seniorSplitBps)) / 100;
   const epochDays = Math.floor(Number(pool.epochSeconds) / 86400);
+  const isActive = pool.statusLabel === "active";
+  const currentVault = selectedTranche === "senior" ? seniorVault : juniorVault;
 
   return (
     <div className="min-h-screen">
       {/* Header */}
       <section className="py-8 gradient-hero border-b border-border">
         <div className="container mx-auto px-4">
-          <Link
-            to="/vaults"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
-          >
+          <Link to="/vaults" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
             <ArrowLeft className="h-4 w-4" />
             Back to Explore
           </Link>
@@ -95,9 +94,7 @@ export default function VaultDetail() {
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="font-display text-3xl font-bold text-foreground">
-                  {pool.name}
-                </h1>
+                <h1 className="font-display text-3xl font-bold text-foreground">{pool.name}</h1>
                 <StatusBadge status={pool.statusLabel} size="lg" />
               </div>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -109,12 +106,7 @@ export default function VaultDetail() {
 
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" asChild>
-                <a
-                  href={`https://sepolia-blockscout.lisk.com/address/${pool.seniorVault}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="gap-1"
-                >
+                <a href={`https://sepolia-blockscout.lisk.com/address/${pool.seniorVault}`} target="_blank" rel="noopener noreferrer" className="gap-1">
                   View Contracts
                   <ExternalLink className="h-3 w-3" />
                 </a>
@@ -128,10 +120,7 @@ export default function VaultDetail() {
       <section className="py-4 bg-card/30 border-b border-border">
         <div className="container mx-auto px-4">
           <DisclosureBox variant="warning">
-            <p>
-              This is a cashflow claim, not legal ownership. Yield is based on
-              verified revenue; distribution happens after escrow lock.
-            </p>
+            <p>This is a cashflow claim, not legal ownership. Yield is based on verified revenue; distribution happens after escrow lock.</p>
           </DisclosureBox>
         </div>
       </section>
@@ -148,53 +137,25 @@ export default function VaultDetail() {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
-              {/* Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  {
-                    label: "Senior Split",
-                    value: `${seniorSplit}%`,
-                    icon: Shield,
-                    color: "text-senior",
-                  },
-                  {
-                    label: "Junior Split",
-                    value: `${juniorSplit}%`,
-                    icon: Zap,
-                    color: "text-junior",
-                  },
-                  {
-                    label: "Epoch Length",
-                    value: `${epochDays} days`,
-                    icon: Clock,
-                    color: "text-foreground",
-                  },
-                  {
-                    label: "Total TVL",
-                    value: "$0.00",
-                    icon: TrendingUp,
-                    color: "text-success",
-                  },
+                  { label: "Senior Split", value: `${seniorSplit}%`, icon: Shield, color: "text-senior" },
+                  { label: "Junior Split", value: `${juniorSplit}%`, icon: Zap, color: "text-junior" },
+                  { label: "Epoch Length", value: `${epochDays} days`, icon: Clock, color: "text-foreground" },
+                  { label: "Total TVL", value: `$${(parseFloat(seniorTvl) + parseFloat(juniorTvl)).toLocaleString()}`, icon: TrendingUp, color: "text-success" },
                 ].map((stat) => (
                   <Card key={stat.label} className="p-4 bg-card border-border">
                     <div className="flex items-center gap-2 mb-2">
                       <stat.icon className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">
-                        {stat.label}
-                      </span>
+                      <span className="text-xs text-muted-foreground">{stat.label}</span>
                     </div>
-                    <p className={`text-xl font-bold ${stat.color}`}>
-                      {stat.value}
-                    </p>
+                    <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
                   </Card>
                 ))}
               </div>
 
-              {/* Current Epoch */}
               <Card className="p-6 bg-card border-border">
-                <h3 className="font-semibold text-foreground mb-4">
-                  Current Epoch Progress
-                </h3>
+                <h3 className="font-semibold text-foreground mb-4">Current Epoch Progress</h3>
                 <EpochProgress current={3} total={4} />
               </Card>
             </TabsContent>
@@ -209,24 +170,9 @@ export default function VaultDetail() {
                   subtitle="Senior Tranche"
                   description="Priority payout from revenue. Lower risk, stable returns."
                   splitBps={Number(pool.seniorSplitBps)}
-                  tvl="$0.00"
+                  tvl={`$${parseFloat(seniorTvl).toLocaleString()}`}
                   apy="~5-8%"
-                >
-                  {selectedTranche === "senior" && isConnected && (
-                    <div className="mt-4 pt-4 border-t border-senior/20 space-y-3">
-                      <Input
-                        type="number"
-                        placeholder="Amount in mUSDC"
-                        value={depositAmount}
-                        onChange={(e) => setDepositAmount(e.target.value)}
-                        className="bg-background border-border"
-                      />
-                      <Button className="w-full bg-senior hover:bg-senior/90 text-senior-foreground">
-                        Deposit to Otter Safe
-                      </Button>
-                    </div>
-                  )}
-                </TrancheCard>
+                />
 
                 <TrancheCard
                   tranche="junior"
@@ -236,31 +182,76 @@ export default function VaultDetail() {
                   subtitle="Junior Tranche"
                   description="Higher yield potential. Absorbs losses first."
                   splitBps={10000 - Number(pool.seniorSplitBps)}
-                  tvl="$0.00"
+                  tvl={`$${parseFloat(juniorTvl).toLocaleString()}`}
                   apy="~12-20%"
+                />
+              </div>
+
+              {/* Action Panel */}
+              {isConnected && isActive && currentVault && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="max-w-md mx-auto"
                 >
-                  {selectedTranche === "junior" && isConnected && (
-                    <div className="mt-4 pt-4 border-t border-junior/20 space-y-3">
-                      <Input
-                        type="number"
-                        placeholder="Amount in mUSDC"
-                        value={depositAmount}
-                        onChange={(e) => setDepositAmount(e.target.value)}
-                        className="bg-background border-border"
-                      />
-                      <Button className="w-full bg-junior hover:bg-junior/90 text-junior-foreground">
-                        Deposit to Otter Boost
+                  <Card className="p-6 bg-card border-border">
+                    <div className="flex items-center gap-2 mb-4">
+                      {selectedTranche === "senior" ? (
+                        <Shield className="h-5 w-5 text-senior" />
+                      ) : (
+                        <Zap className="h-5 w-5 text-junior" />
+                      )}
+                      <h3 className="font-semibold text-foreground">
+                        {selectedTranche === "senior" ? "Otter Safe" : "Otter Boost"}
+                      </h3>
+                    </div>
+
+                    {/* Deposit/Withdraw Tabs */}
+                    <div className="flex gap-2 mb-4">
+                      <Button
+                        variant={activeTab === "deposit" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setActiveTab("deposit")}
+                        className="flex-1"
+                      >
+                        Deposit
+                      </Button>
+                      <Button
+                        variant={activeTab === "withdraw" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setActiveTab("withdraw")}
+                        className="flex-1"
+                      >
+                        Withdraw
                       </Button>
                     </div>
-                  )}
-                </TrancheCard>
-              </div>
+
+                    {activeTab === "deposit" ? (
+                      <DepositPanel
+                        vaultAddress={currentVault}
+                        tranche={selectedTranche}
+                        onSuccess={() => refetch()}
+                      />
+                    ) : (
+                      <WithdrawPanel
+                        vaultAddress={currentVault}
+                        tranche={selectedTranche}
+                        onSuccess={() => refetch()}
+                      />
+                    )}
+                  </Card>
+                </motion.div>
+              )}
 
               {!isConnected && (
                 <Card className="p-4 bg-muted border-border text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Connect your wallet to deposit into a tranche.
-                  </p>
+                  <p className="text-sm text-muted-foreground">Connect your wallet to deposit into a tranche.</p>
+                </Card>
+              )}
+
+              {isConnected && !isActive && (
+                <Card className="p-4 bg-muted border-border text-center">
+                  <p className="text-sm text-muted-foreground">This pool is not active yet. Deposits will be enabled once a verifier activates it.</p>
                 </Card>
               )}
             </TabsContent>
@@ -274,9 +265,7 @@ export default function VaultDetail() {
                 <div className="flex items-start gap-3">
                   <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-muted-foreground">
-                    <p className="font-medium text-foreground mb-1">
-                      Revenue Distribution Process
-                    </p>
+                    <p className="font-medium text-foreground mb-1">Revenue Distribution Process</p>
                     <ol className="list-decimal list-inside space-y-1">
                       <li>Verifier posts revenue amount for the epoch</li>
                       <li>Verifier deposits funds into escrow contract</li>
@@ -291,62 +280,43 @@ export default function VaultDetail() {
 
             <TabsContent value="onchain" className="space-y-6">
               <Card className="p-6 bg-card border-border">
-                <h3 className="font-semibold text-foreground mb-4">
-                  Contract Addresses
-                </h3>
+                <h3 className="font-semibold text-foreground mb-4">Contract Addresses</h3>
                 <div className="space-y-3">
-                  {pool.statusLabel === "active" ? (
+                  {isActive ? (
                     <>
                       <div className="flex items-center justify-between py-2 border-b border-border">
-                        <span className="text-sm text-muted-foreground">
-                          Senior Vault
-                        </span>
+                        <span className="text-sm text-muted-foreground">Senior Vault</span>
                         <AddressChip address={pool.seniorVault} />
                       </div>
                       <div className="flex items-center justify-between py-2 border-b border-border">
-                        <span className="text-sm text-muted-foreground">
-                          Junior Vault
-                        </span>
+                        <span className="text-sm text-muted-foreground">Junior Vault</span>
                         <AddressChip address={pool.juniorVault} />
                       </div>
                     </>
                   ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Vault contracts will be created when the pool is
-                      activated.
-                    </p>
+                    <p className="text-sm text-muted-foreground">Vault contracts will be created when the pool is activated.</p>
                   )}
                   <div className="flex items-center justify-between py-2">
-                    <span className="text-sm text-muted-foreground">
-                      Issuer
-                    </span>
+                    <span className="text-sm text-muted-foreground">Issuer</span>
                     <AddressChip address={pool.issuer} />
                   </div>
                 </div>
               </Card>
 
               <Card className="p-6 bg-card border-border">
-                <h3 className="font-semibold text-foreground mb-4">
-                  Pool Metadata
-                </h3>
+                <h3 className="font-semibold text-foreground mb-4">Pool Metadata</h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Metadata CID</span>
-                    <span className="font-mono text-foreground">
-                      {pool.metadataCID || "N/A"}
-                    </span>
+                    <span className="font-mono text-foreground">{pool.metadataCID || "N/A"}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Start Time</span>
-                    <span className="text-foreground">
-                      {new Date(Number(pool.startTime) * 1000).toLocaleString()}
-                    </span>
+                    <span className="text-foreground">{new Date(Number(pool.startTime) * 1000).toLocaleString()}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Epoch Duration</span>
-                    <span className="text-foreground">
-                      {Number(pool.epochSeconds)} seconds ({epochDays} days)
-                    </span>
+                    <span className="text-foreground">{Number(pool.epochSeconds)} seconds ({epochDays} days)</span>
                   </div>
                 </div>
               </Card>

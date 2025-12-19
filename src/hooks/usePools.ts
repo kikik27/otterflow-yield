@@ -1,6 +1,8 @@
-import { useReadContract, useReadContracts } from "wagmi";
+import { useReadContract } from "wagmi";
 import { OtterAssetRegistryABI } from "@/lib/abis";
 import { LOCAL_ADDRESSES, getPoolStatusLabel } from "@/lib/contracts";
+import { useQuery } from "@tanstack/react-query";
+import { createPublicClient, http, defineChain } from "viem";
 
 export interface Pool {
   id: number;
@@ -16,6 +18,18 @@ export interface Pool {
   name: string;
 }
 
+const anvilChain = defineChain({
+  id: 31337,
+  name: "Anvil",
+  nativeCurrency: { decimals: 18, name: "Ether", symbol: "ETH" },
+  rpcUrls: { default: { http: ["http://127.0.0.1:8545"] } },
+});
+
+const client = createPublicClient({
+  chain: anvilChain,
+  transport: http(),
+});
+
 export function usePools() {
   const { data: poolCount, isLoading: countLoading } = useReadContract({
     address: LOCAL_ADDRESSES.OtterAssetRegistry,
@@ -24,41 +38,55 @@ export function usePools() {
   });
 
   const count = poolCount ? Number(poolCount) : 0;
-  
-  const contracts = count > 0 
-    ? Array.from({ length: count }, (_, i) => ({
-        address: LOCAL_ADDRESSES.OtterAssetRegistry,
-        abi: OtterAssetRegistryABI,
-        functionName: "getPool",
-        args: [BigInt(i + 1)],
-      }))
-    : [];
 
-  const { data: poolsData, isLoading: poolsLoading } = useReadContracts({ contracts: contracts as any });
-
-  const pools: Pool[] = [];
-  
-  if (poolsData) {
-    for (let i = 0; i < poolsData.length; i++) {
-      const result = poolsData[i] as any;
-      if (result.status === "success" && result.result) {
-        const p = result.result;
-        pools.push({
-          id: i + 1,
-          issuer: p.issuer,
-          metadataCID: p.metadataCID,
-          epochSeconds: p.epochSeconds,
-          startTime: p.startTime,
-          seniorSplitBps: p.seniorSplitBps,
-          status: p.status,
-          statusLabel: getPoolStatusLabel(p.status),
-          seniorVault: p.seniorVault,
-          juniorVault: p.juniorVault,
-          name: `Otter Pool #${i + 1}`,
-        });
-      }
-    }
-  }
+  const { data: pools = [], isLoading: poolsLoading } = useQuery({
+    queryKey: ["pools", count],
+    queryFn: async (): Promise<Pool[]> => {
+      if (count === 0) return [];
+      
+      const poolPromises = Array.from({ length: count }, async (_, i) => {
+        try {
+          const result = await client.readContract({
+            address: LOCAL_ADDRESSES.OtterAssetRegistry,
+            abi: OtterAssetRegistryABI,
+            functionName: "getPool",
+            args: [BigInt(i + 1)],
+          });
+          
+          const p = result as {
+            issuer: `0x${string}`;
+            metadataCID: string;
+            epochSeconds: bigint;
+            startTime: bigint;
+            seniorSplitBps: bigint;
+            status: number;
+            seniorVault: `0x${string}`;
+            juniorVault: `0x${string}`;
+          };
+          
+          return {
+            id: i + 1,
+            issuer: p.issuer,
+            metadataCID: p.metadataCID,
+            epochSeconds: p.epochSeconds,
+            startTime: p.startTime,
+            seniorSplitBps: p.seniorSplitBps,
+            status: p.status,
+            statusLabel: getPoolStatusLabel(p.status),
+            seniorVault: p.seniorVault,
+            juniorVault: p.juniorVault,
+            name: `Otter Pool #${i + 1}`,
+          } as Pool;
+        } catch {
+          return null;
+        }
+      });
+      
+      const results = await Promise.all(poolPromises);
+      return results.filter((p): p is Pool => p !== null);
+    },
+    enabled: count > 0,
+  });
 
   return { pools, poolCount: count, isLoading: countLoading || poolsLoading };
 }
@@ -72,7 +100,17 @@ export function usePool(poolId: number) {
     query: { enabled: poolId > 0 },
   });
 
-  const p = data as any;
+  const p = data as {
+    issuer: `0x${string}`;
+    metadataCID: string;
+    epochSeconds: bigint;
+    startTime: bigint;
+    seniorSplitBps: bigint;
+    status: number;
+    seniorVault: `0x${string}`;
+    juniorVault: `0x${string}`;
+  } | undefined;
+
   const pool: Pool | null = p ? {
     id: poolId,
     issuer: p.issuer,
