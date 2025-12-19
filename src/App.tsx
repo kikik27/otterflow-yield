@@ -1,27 +1,55 @@
+import "@rainbow-me/rainbowkit/styles.css";
+import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import { WagmiProvider } from "wagmi";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import { config } from "@/lib/wagmi";
+import { MainLayout } from "@/components/layout";
+import Landing from "@/pages/Landing";
+import Explore from "@/pages/Explore";
+import VaultDetail from "@/pages/VaultDetail";
+import Portfolio from "@/pages/Portfolio";
+import HowItWorks from "@/pages/HowItWorks";
+import VerifierConsole from "@/pages/VerifierConsole";
+import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <WagmiProvider config={config}>
+    <QueryClientProvider client={queryClient}>
+      <RainbowKitProvider
+        theme={darkTheme({
+          accentColor: "hsl(199, 89%, 48%)",
+          accentColorForeground: "hsl(222, 47%, 6%)",
+          borderRadius: "medium",
+        })}
+      >
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route element={<MainLayout />}>
+                <Route path="/" element={<Landing />} />
+                <Route path="/vaults" element={<Explore />} />
+                <Route path="/vaults/:poolId" element={<VaultDetail />} />
+                <Route path="/portfolio" element={<Portfolio />} />
+                <Route path="/how-it-works" element={<HowItWorks />} />
+                <Route path="/verifier" element={<VerifierConsole />} />
+                <Route path="/verifier/revenue" element={<VerifierConsole />} />
+                <Route path="/verifier/distribute" element={<VerifierConsole />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </RainbowKitProvider>
+    </QueryClientProvider>
+  </WagmiProvider>
 );
 
 export default App;
