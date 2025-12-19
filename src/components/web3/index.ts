@@ -7,3 +7,6 @@ export { TrancheCard } from "./TrancheCard";
 export { VaultCard } from "./VaultCard";
 export { EpochTimeline, EpochProgress } from "./EpochTimeline";
 export { ConnectButton } from "./ConnectButton";
+export { FaucetButton } from "./FaucetButton";
+export { DepositPanel } from "./DepositPanel";
+export { WithdrawPanel } from "./WithdrawPanel";
