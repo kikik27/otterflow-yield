@@ -12,6 +12,7 @@ import VaultDetail from "@/pages/VaultDetail";
 import Portfolio from "@/pages/Portfolio";
 import HowItWorks from "@/pages/HowItWorks";
 import VerifierConsole from "@/pages/VerifierConsole";
+import IssuerConsole from "@/pages/IssuerConsole";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/verifier" element={<VerifierConsole />} />
               <Route path="/verifier/revenue" element={<VerifierConsole />} />
               <Route path="/verifier/distribute" element={<VerifierConsole />} />
+              <Route path="/issuer" element={<IssuerConsole />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
